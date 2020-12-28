@@ -6641,7 +6641,7 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 	unsigned int tag;
 	u32 pos;
 	int err;
-	u8 resp = 0xF;
+	u8 resp = 0xF, lun;
 	struct ufshcd_lrb *lrbp;
 	unsigned long flags;
 
@@ -6658,8 +6658,8 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 	ufshcd_vops_dbg_register_dump(hba);
 	exynos_ufs_show_uic_info(hba);
 
-	lrbp = &hba->lrb[tag];
-	err = ufshcd_issue_tm_cmd(hba, lrbp->lun, 0, UFS_LOGICAL_RESET, &resp);
+	lun = ufshcd_scsi_to_upiu_lun(cmd->device->lun);
+	err = ufshcd_issue_tm_cmd(hba, lun, 0, UFS_LOGICAL_RESET, &resp);
 	if (err || resp != UPIU_TASK_MANAGEMENT_FUNC_COMPL) {
 		if (!err)
 			err = resp;
@@ -6668,7 +6668,7 @@ static int ufshcd_eh_device_reset_handler(struct scsi_cmnd *cmd)
 
 	/* clear the commands that were pending for corresponding LUN */
 	for_each_set_bit(pos, &hba->outstanding_reqs, hba->nutrs) {
-		if (hba->lrb[pos].lun == lrbp->lun) {
+		if (hba->lrb[pos].lun == lun) {
 			err = ufshcd_clear_cmd(hba, pos);
 			if (err)
 				break;
