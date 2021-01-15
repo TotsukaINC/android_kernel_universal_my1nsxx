@@ -5331,7 +5331,7 @@ static int _nfs4_get_security_label(struct inode *inode, void *buf,
 		return -ENOENT;
 	if (buflen < label.len)
 		return -ERANGE;
-	return 0;
+	return label.len;
 }
 
 static int nfs4_get_security_label(struct inode *inode, void *buf,
