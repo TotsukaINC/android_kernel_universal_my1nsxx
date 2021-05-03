@@ -1014,8 +1014,10 @@ static int __init sec_debug_next_init(void)
 	/* set member table */
 	secdbg_base_set_memtab_info(&sdn->memtab);
 
+#ifdef CONFIG_KALLSYMS
 	/* set kernel symbols */
 	sec_debug_set_kallsyms_info(&(sdn->ksyms), SEC_DEBUG_MAGIC1);
+#endif
 
 	/* set kernel constants */
 	sec_debug_set_kconstants();
