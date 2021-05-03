@@ -741,7 +741,7 @@ out_sem:
 				ret = ext4_jbd2_inode_add_wait(handle, inode);
 			else
 #endif
-				ret = ext4_jbd2_inode_add_write(handle, inode);
+				ret = ext4_jbd2_inode_add_write(handle, inode, start_byte, length);
 			if (ret)
 				return ret;
 		}
