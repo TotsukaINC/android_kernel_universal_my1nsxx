@@ -33,20 +33,6 @@ static DEFINE_SPINLOCK(siova_pool_lock);
 
 #define MAX_IOVA_ALIGNMENT      12
 
-static unsigned long find_first_fit_with_align(unsigned long *map,
-					       unsigned long size,
-					       unsigned long start,
-					       unsigned int nr, void *data,
-					       struct gen_pool *pool)
-{
-	unsigned long align = ((*(unsigned int *)data) >> PAGE_SHIFT);
-
-	if (align > (1 << MAX_IOVA_ALIGNMENT))
-		align = (1 << MAX_IOVA_ALIGNMENT);
-
-	return bitmap_find_next_zero_area(map, size, start, nr, (align - 1));
-}
-
 static int ion_secure_iova_alloc(unsigned long *addr, unsigned long size,
 				 unsigned int align)
 {
