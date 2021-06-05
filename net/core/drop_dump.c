@@ -165,8 +165,8 @@ queueing:
 				push_len = (unsigned int)skb_network_header_len(skb2) 
 					   + (unsigned int)(tcph->doff * 4);
 			} else {
-				push_len = (unsigned int)skb2->data 
-					   - (unsigned int)skb_network_header(skb2);
+				push_len = (unsigned int)(uintptr_t)skb2->data 
+					   - (unsigned int)(uintptr_t)skb_network_header(skb2);
 			}
 
 			if (unlikely(skb_headroom(skb2) < push_len)) {
