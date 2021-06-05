@@ -148,9 +148,7 @@ void dump_backtrace(struct pt_regs *regs, struct task_struct *tsk)
 
 	printk("Call trace:\n");
 	do {
-		unsigned long stack;
-		int ret;
-
+		
 #ifdef CONFIG_SEC_DEBUG_LIMIT_BACKTRACE
 		if (MAX_UNWINDING_LOOP < cnt) {
 			pr_info("%s: Forcely break dump_backtrace to avoid infinity backtrace\n", __func__);
