@@ -127,7 +127,8 @@ void show_system_info(char *dataframe, int *idx)
 	//===================================================//
 	sensor_debug_info *info = 0;
 	system_debug_info *s_info = 0;
-	int count = *dataframe, i=0;
+	int i;
+	int count = *dataframe;
 
 	++dataframe;
 	*idx += (1 + sizeof(sensor_debug_info) * count + sizeof(system_debug_info));
