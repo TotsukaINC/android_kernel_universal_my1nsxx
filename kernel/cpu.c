@@ -1411,6 +1411,27 @@ int cpu_up(unsigned int cpu)
 }
 EXPORT_SYMBOL_GPL(cpu_up);
 
+int cpus_up(struct cpumask cpus)
+{
+	int cpu, ret;
+
+	for_each_cpu(cpu, &cpus)
+		if (cpu_online(cpu)) {
+			cpumask_clear_cpu(cpu, &cpus);
+			pr_warn("cpus_up: cpu%d is already online\n", cpu);
+		}
+
+	cpumask_copy(&cpu_faston_mask, &cpus);
+
+	for_each_cpu(cpu, &cpus)
+		ret = do_cpu_up((unsigned int)cpu, CPUHP_ONLINE);
+
+	cpumask_clear(&cpu_faston_mask);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(cpus_up);
+
 #ifdef CONFIG_PM_SLEEP_SMP
 static cpumask_var_t frozen_cpus;
 
