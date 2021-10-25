@@ -248,7 +248,6 @@ static struct ffs_dev *_ffs_find_dev(const char *name);
 static struct ffs_dev *_ffs_alloc_dev(void);
 static void _ffs_free_dev(struct ffs_dev *dev);
 static int ffs_acquire_dev(const char *dev_name, struct ffs_data *ffs_data);
-static void ffs_release_dev(struct ffs_dev *ffs_dev);
 static int ffs_ready(struct ffs_data *ffs);
 static void ffs_closed(struct ffs_data *ffs);
 
@@ -3634,25 +3633,6 @@ static int ffs_acquire_dev(const char *dev_name, struct ffs_data *ffs_data)
 
 	ffs_dev_unlock();
 	return ret;
-}
-
-static void ffs_release_dev(struct ffs_dev *ffs_dev)
-{
-	ENTER();
-	ffs_dev_lock();
-
-	if (ffs_dev && ffs_dev->mounted) {
-		ffs_dev->mounted = false;
-		if (ffs_dev->ffs_data) {
-			ffs_dev->ffs_data->private_data = NULL;
-			ffs_dev->ffs_data = NULL;
-		}
-
-		if (ffs_dev->ffs_release_dev_callback)
-			ffs_dev->ffs_release_dev_callback(ffs_dev);
-	}
-
-	ffs_dev_unlock();
 }
 
 static int ffs_ready(struct ffs_data *ffs)
