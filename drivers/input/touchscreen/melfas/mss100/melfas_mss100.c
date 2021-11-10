@@ -1409,6 +1409,39 @@ static void mms_read_info_work(struct work_struct *work)
 	mms_run_rawdata(info, true);
 	info->info_work_done = true;
 }
+
+static void mms_set_input_prop_dex(struct mms_ts_info *ts, struct input_dev *dev)
+{
+	static char mms_phys[64] = { 0 };
+
+	snprintf(mms_phys, sizeof(mms_phys), "%s/input1", dev->name);
+	dev->phys = mms_phys;
+	dev->id.bustype = BUS_I2C;
+	dev->dev.parent = &ts->client->dev;
+
+	set_bit(EV_SYN, dev->evbit);
+	set_bit(EV_SW, dev->evbit);
+	set_bit(EV_KEY, dev->evbit);
+	set_bit(EV_ABS, dev->evbit);
+	set_bit(BTN_TOUCH, dev->keybit);
+	set_bit(BTN_TOOL_FINGER, dev->keybit);
+	set_bit(KEY_BLACK_UI_GESTURE, dev->keybit);
+	set_bit(KEY_INT_CANCEL, dev->keybit);
+
+
+	set_bit(INPUT_PROP_POINTER, dev->propbit);
+	set_bit(KEY_WAKEUP, dev->keybit);
+
+	input_set_abs_params(dev, ABS_MT_POSITION_X, 0, ts->dtdata->max_x, 0, 0);
+	input_set_abs_params(dev, ABS_MT_POSITION_Y, 0, ts->dtdata->max_y, 0, 0);
+	input_set_abs_params(dev, ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0);
+	input_set_abs_params(dev, ABS_MT_TOUCH_MINOR, 0, 255, 0, 0);
+	input_set_abs_params(dev, ABS_MT_CUSTOM, 0, 0xFFFFFFFF, 0, 0);
+
+    input_mt_init_slots(dev, 10, INPUT_MT_POINTER);
+	input_set_drvdata(dev, ts);
+}
+
 static void mms_set_input_prop_proximity(struct mms_ts_info *info, struct input_dev *dev)
 {
 	static char mms_phys[64] = { 0 };
@@ -1581,6 +1614,13 @@ static int mms_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		info->input_dev_proximity->name = "sec_touchproximity";
 		mms_set_input_prop_proximity(info, info->input_dev_proximity);
 	}
+	
+	info->input_dev_pad = input_allocate_device();
+	if (!info->input_dev_pad) {
+		input_err(true, &info->client->dev, "%s: allocate device err!\n", __func__);
+		ret = -ENOMEM;
+		goto err_allocate_input_dev_pad;
+	}
 
 	snprintf(info->phys, sizeof(info->phys), "%s/input0", dev_name(&client->dev));
 	input_dev->name = "sec_touchscreen";
@@ -1604,6 +1644,14 @@ static int mms_probe(struct i2c_client *client, const struct i2c_device_id *id)
 		input_err(true, &client->dev, "%s [ERROR] input_register_device\n", __func__);
 		ret = -EIO;
 		goto err_input_register_device;
+	}
+	
+	info->input_dev_pad->name = "sec_touchpad";
+	mms_set_input_prop_dex(info, info->input_dev_pad);
+	ret = input_register_device(info->input_dev_pad);
+	if (ret) {
+		input_err(true, &info->client->dev, "%s: Unable to register %s input device\n", __func__, info->input_dev_pad->name);
+		goto err_input_pad_register_device;
 	}
 
 	if (info->dtdata->support_ear_detect) {
@@ -1756,6 +1804,12 @@ err_fw_update:
 		input_unregister_device(info->input_dev_proximity);
 		info->input_dev_proximity = NULL;
 	}
+err_allocate_input_dev_pad:
+	if (info->input_dev)
+		input_free_device(info->input_dev);
+err_input_pad_register_device:
+	input_unregister_device(info->input_dev);
+	info->input_dev = NULL;
 err_input_proximity_register_device:	
 	input_unregister_device(info->input_dev);
 	info->input_dev = NULL;
@@ -1765,6 +1819,8 @@ err_input_register_device:
 			input_free_device(info->input_dev_proximity);
 	}
 err_allocate_input_dev_proximity:
+	if (info->input_dev_pad)
+		input_free_device(info->input_dev_pad);
 err_platform_data:
 #if MMS_USE_DEVICETREE
 err_devm_alloc:
@@ -1820,6 +1876,9 @@ static int mms_remove(struct i2c_client *client)
 		input_mt_destroy_slots(info->input_dev_proximity);
 		input_unregister_device(info->input_dev_proximity);
 	}
+	
+	input_mt_destroy_slots(info->input_dev_pad);
+	input_unregister_device(info->input_dev_pad);
 
 	input_unregister_device(info->input_dev);
 
